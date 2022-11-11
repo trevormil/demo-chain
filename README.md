@@ -1,3 +1,7 @@
+# Scaling Blockchain-Based Tokens with Joint Cryptograhpic Accumulators
+
+This repository was constructed using a starting template of https://github.com/lhartikk/naivechain.
+
 # Naivechain - a blockchain implementation in 200 lines of code
 
 ### Motivation
