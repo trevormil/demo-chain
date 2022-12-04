@@ -1,6 +1,6 @@
 # Scaling Blockchain-Based Tokens with Joint Cryptograhpic Accumulators
 
-The following API for each node is used to trigger blockchain actions. See the README below for sending HTTP requests and starting nodes.
+The following API for each node in main.js is used to trigger blockchain actions. See the README below for sending HTTP requests and starting nodes.
 
     app.get('/blocks');
 
