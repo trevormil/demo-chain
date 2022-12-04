@@ -1,3 +1,6 @@
+// These scripts were used to calculate the Merkle tree generation times.
+// We assume 7147 blockchain nodes (current Ethereum numbers)
+
 var CryptoJS = require('crypto-js');
 var express = require('express');
 var bodyParser = require('body-parser');

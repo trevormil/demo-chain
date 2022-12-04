@@ -1,6 +1,36 @@
 # Scaling Blockchain-Based Tokens with Joint Cryptograhpic Accumulators
 
-This repository was constructed using a starting template of https://github.com/lhartikk/naivechain.
+The following API for each node is used to trigger blockchain actions. See the README below for sending HTTP requests and starting nodes.
+
+    app.get('/blocks');
+
+    // Prints all stats of the blockchain
+    app.post('/print');
+
+    // Prunes each node's local storage of stored JMTs and LMTs
+    // (ex. after a day of storing them, we can safely prune them)
+    app.post('/prune');
+
+    // Mines the next block of the blockchain by this node.
+    // Adds any local commitments and LMRs to the JMT 
+    app.post('/mineBlock'); //req.body.data should be specified to set the block data contents (ex. "Hello World");
+
+    // Broadcast this node's locally generated LMR to the network. Store the LMT until it is pruned.
+    app.post('/broadcastLocalMerkleRoot');
+
+    // Get blockchain peers
+    app.get('/peers');
+
+    // Add a new local commitment. This is triggered by the end-user with their commitment.
+    app.post('/addCommitment'); //req.body.data should be the commitment (ex. "816534932c2b7154836da6afc367695e6337db8a921823784c14378abed4f7d7");
+
+
+
+
+
+
+
+This repository was constructed using a starting template of https://github.com/lhartikk/naivechain. The README of this repository is provided below. See test.js for test scripts regarding Merkle tree generation times.
 
 # Naivechain - a blockchain implementation in 200 lines of code
 

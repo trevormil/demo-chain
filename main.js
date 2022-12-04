@@ -51,6 +51,7 @@ var localMerkleTreeMempool = [];
 var storedLocalMerkleTrees = [];
 var storedJointMerkleTrees = [];
 
+// Prints the stats of the blockchain at the current moment
 function printStats() {
     console.log('--------------------------------');
     console.log('Blockchain Length: ' + blockchain.length);
@@ -92,18 +93,23 @@ function printStats() {
     console.log('--------------------------------');
 }
 
+// Initializes the HTTP server with an ExpressJS backend
 var initHttpServer = () => {
     var app = express();
     app.use(bodyParser.json());
 
+    // Returns the blockchain
     app.get('/blocks', (req, res) => res.send(JSON.stringify(blockchain)));
+
+    // Prints all stats of the blockchain
     app.post('/print', (req, res) => {
         printStats();
         broadcast(printMsg());
-
         res.send();
     });
 
+    // Prunes each node's local storage of stored JMTs and LMTs
+    // (ex. after a day of storing them, we can safely prune them)
     app.post('/prune', (req, res) => {
         storedJointMerkleTrees = [];
         storedLocalMerkleTrees = [];
@@ -111,7 +117,11 @@ var initHttpServer = () => {
         broadcast(pruneMsg());
         res.send();
     });
+
+    // Mines the next block of the blockchain by this node.
+    // Add any local commitments and LMRs to the JMT
     app.post('/mineBlock', (req, res) => {
+        // Add local commitments
         if (localCommitments.length) {
             const tree = new MerkleTree(localCommitments, SHA256);
             localMerkleTreeMempool.push(tree.getRoot().toString('hex'));
@@ -124,6 +134,8 @@ var initHttpServer = () => {
         addBlock(newBlock);
 
         broadcast(responseLatestMsg());
+
+        // Add local LMRs
         if (localMerkleTreeMempool.length > 0) {
             console.log(localMerkleTreeMempool);
             let jmt = new MerkleTree(localMerkleTreeMempool, SHA256);
@@ -138,6 +150,7 @@ var initHttpServer = () => {
         res.send();
     });
 
+    // Broadcast this node's locally generated LMR to the network. Store the LMT until it is pruned.
     app.post('/broadcastLocalMerkleRoot', (req, res) => {
         const tree = new MerkleTree(localCommitments, SHA256);
         storedLocalMerkleTrees.push(tree);
@@ -158,6 +171,7 @@ var initHttpServer = () => {
         res.send();
     });
 
+    // Get blockchain peers
     app.get('/peers', (req, res) => {
         res.send(
             sockets.map(
@@ -165,17 +179,21 @@ var initHttpServer = () => {
             )
         );
     });
+
+    // Add a new local commitment. This is triggered by the end-user with their commitment.
     app.post('/addCommitment', (req, res) => {
         localCommitments.push(req.body.data);
         console.log('adding local commitment: ', req.body.data);
         res.send();
     });
 
+    // Start server
     app.listen(http_port, () =>
         console.log('Listening http on port: ' + http_port)
     );
 };
 
+// Start P2P Network
 var initP2PServer = () => {
     var server = new WebSocket.Server({ port: p2p_port });
     server.on('connection', (ws) => initConnection(ws));
@@ -189,6 +207,7 @@ var initConnection = (ws) => {
     write(ws, queryChainLengthMsg());
 };
 
+// Handle incoming and outgoing messages to and from other nodes, respectively.
 var initMessageHandler = (ws) => {
     ws.on('message', (data) => {
         var message = JSON.parse(data);
@@ -230,6 +249,7 @@ var initErrorHandler = (ws) => {
     ws.on('error', () => closeConnection(ws));
 };
 
+// Generate the next block in the blockchain with a newly generated JMT and JMR
 var generateNextBlock = (blockData) => {
     let jmt = new MerkleTree(localMerkleTreeMempool, SHA256);
     let jmr = jmt.getRoot().toString('hex');
@@ -253,6 +273,7 @@ var generateNextBlock = (blockData) => {
     );
 };
 
+//Below are some internal helper functions
 var calculateHashForBlock = (block) => {
     return calculateHash(
         block.index,
@@ -305,6 +326,7 @@ var connectToPeers = (newPeers) => {
     });
 };
 
+//Below are the message handler functions based on message type
 var handleLocalMerkleRootResponse = (message) => {
     var root = message.data;
     localMerkleTreeMempool.push(root);
@@ -368,6 +390,7 @@ var handleBlockchainResponse = (message) => {
     }
 };
 
+//Handle if the blockchain is different from peers
 var replaceChain = (newBlocks) => {
     if (isValidChain(newBlocks) && newBlocks.length > blockchain.length) {
         console.log(
@@ -398,6 +421,7 @@ var isValidChain = (blockchainToValidate) => {
     return true;
 };
 
+//Internal helper functions for messages and queries
 var getLatestBlock = () => blockchain[blockchain.length - 1];
 var queryChainLengthMsg = () => ({ type: MessageType.QUERY_LATEST });
 var queryAllMsg = () => ({ type: MessageType.QUERY_ALL });
@@ -434,6 +458,7 @@ var write = (ws, message) => ws.send(JSON.stringify(message));
 var broadcast = (message) =>
     sockets.forEach((socket) => write(socket, message));
 
+//Main code that is run when main.js is called
 connectToPeers(initialPeers);
 initHttpServer();
 initP2PServer();
